@@ -1,13 +1,11 @@
 package com.diving.wsql.builder
 
-import com.diving.wcom.diving.wsql.bean.Alias
 import com.diving.wsql.core.stuffToString
 import com.diving.wsql.factory.QuerySqlFactory
 import com.diving.wsql.SqlSplitUtils
 import com.diving.wsql.Utils
 import com.diving.wsql.Utils.makeMountFieldKey
 import com.diving.wsql.bean.*
-import com.diving.wcom.diving.wsql.builder.UK_CHARACTER_IN_SQL
 import com.diving.wsql.core.getFieldsRecursive
 import com.diving.wsql.en.Join
 import com.diving.wsql.en.Oprerate
