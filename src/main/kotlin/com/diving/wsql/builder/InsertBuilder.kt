@@ -48,6 +48,7 @@ class InsertBuilder(private val sqlFactory: ExecuteSqlFactory) : HelpBuilder {
 
     fun setObj(obj: Any): InsertBuilder {
         this.obj = obj
+        this.clazz=obj.javaClass
         return this
     }
 
