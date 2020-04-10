@@ -148,15 +148,7 @@ object SqlSplitUtils {
                 newPagedTemp.add(com.diving.wsql.bean.SqlTemp("", s, "", false))
                 if (index != pagedSqlParts.size - 1) {
                     val s = newSqlTemp.map {
-                        com.diving.wsql.bean.SqlTemp(
-                            "",
-                            it.sql.replace(UK_CHARACTER_IN_SQL, it.uk).replace(
-                                FIELDS_CHARACTER_IN_SQL,
-                                " $indexUk.$indexKey"
-                            ),
-                            "",
-                            false
-                        )
+                        com.diving.wsql.bean.SqlTemp("", it.sql.replace(UK_CHARACTER_IN_SQL, it.uk).replace(FIELDS_CHARACTER_IN_SQL, " $indexUk.$indexKey"), "", false)
                     }
                     newPagedTemp.addAll(s)
                 }
