@@ -1,6 +1,6 @@
 package com.diving.wsql.en
 
-enum class Oprerate(val string: String) {
+enum class Operate(val string: String) {
     UPDATE("update"),
     DELETE("delete"),
     SELECT("select "),

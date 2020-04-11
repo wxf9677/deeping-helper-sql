@@ -7,7 +7,7 @@ import com.diving.wsql.SqlSplitUtils
 import com.diving.wsql.Utils
 import com.diving.wsql.bean.*
 import com.diving.wsql.en.Join
-import com.diving.wsql.en.Oprerate
+import com.diving.wsql.en.Operate
 import java.util.*
 
 
@@ -95,7 +95,7 @@ class ReDirectCountBuilder(private  val sqlFactory: QuerySqlFactory) : HelpBuild
 
             var inSql = LinkedList<SqlTemp>()
             val inCountUk = inCountUk ?: uk!!
-            inSql.add(SqlTemp("", "${Oprerate.SELECT.string} distinct ${termFields(inCountUk)} from $tableName $inCountUk ", "", false))
+            inSql.add(SqlTemp("", "${Operate.SELECT.string} distinct ${termFields(inCountUk)} from $tableName $inCountUk ", "", false))
             SqlSplitUtils.makePagedSql(pagedSql, inSql, indexUk, indexKey, whereSql, s)
             val partSql = "${join!!.s} (${inSql.mapNotNull { it.sql }.stuffToString(" ")}) $UK_CHARACTER_IN_SQL $sqlTerm"
             sqlFactory.appendSql(uk!!, partSql, tableName!!, false)

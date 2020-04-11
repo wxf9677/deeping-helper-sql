@@ -1,5 +1,5 @@
 package com.diving.wsql.builder
-import com.diving.wsql.en.Oprerate
+import com.diving.wsql.en.Operate
 import com.diving.wsql.factory.QuerySqlFactory
 /**
  * @package: com.diving.wsql.builder
@@ -24,7 +24,7 @@ class CountBuilder(private val sqlFactory: QuerySqlFactory) : HelpBuilder {
     private fun doBefore() {
         requireNotNull(tableName){"tableName is needed,please setTableName first"}
         requireNotNull(uk){"uk is needed,please setUk first"}
-        val sql = "${Oprerate.SELECT.string}  $FIELDS_CHARACTER_IN_SQL from $tableName $UK_CHARACTER_IN_SQL "
+        val sql = "${Operate.SELECT.string}  $FIELDS_CHARACTER_IN_SQL from $tableName $UK_CHARACTER_IN_SQL "
         sqlFactory.appendSql(uk!!, sql,tableName!!,true)
     }
 

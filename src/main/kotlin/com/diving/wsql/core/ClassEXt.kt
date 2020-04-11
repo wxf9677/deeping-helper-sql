@@ -36,6 +36,22 @@ fun Class<*>.getMethodsRecursive(): MutableList<Method> {
     return methodList
 }
 
+
+fun Class<*>.getInterfaceRecursive(): MutableList<Class<*>> {
+    val interfaces = mutableListOf<Class<*>>()
+    recursiveInterface(this, interfaces)
+    return interfaces
+}
+
+
+private fun recursiveInterface(clazz: Class<*>, list: MutableList<Class<*>>) {
+    var interfaces: Array<out Class<*>> = clazz.interfaces ?: return
+    list.addAll(interfaces)
+    interfaces?.forEach {
+        recursiveInterface(it, list)
+    }
+}
+
 /**
  * @Description: 根据报名获取包下面的类
  * @Date: 20-4-10 下午1:36

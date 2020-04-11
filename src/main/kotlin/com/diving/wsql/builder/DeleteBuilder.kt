@@ -1,6 +1,6 @@
 package com.diving.wsql.builder
 
-import com.diving.wsql.en.Oprerate
+import com.diving.wsql.en.Operate
 import com.diving.wsql.factory.ExecuteSqlFactory
 
 /**
@@ -23,7 +23,7 @@ class DeleteBuilder(private val sqlFactory: ExecuteSqlFactory) : HelpBuilder {
     fun where(): WhereExecuteBuilder {
         return WhereExecuteBuilder(sqlFactory, "where") { whereSql ->
             requireNotNull(tableName) { "tableName is needed,please setTableName first" }
-            val sql = "${Oprerate.DELETE} from $tableName  $whereSql"
+            val sql = "${Operate.DELETE} from $tableName  $whereSql"
             sqlFactory.appendSql(sql)
         }
     }

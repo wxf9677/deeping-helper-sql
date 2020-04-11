@@ -5,7 +5,7 @@ import com.diving.wsql.Utils.makeMountFieldKey
 import com.diving.wsql.bean.*
 import com.diving.wsql.core.getFieldsRecursive
 import com.diving.wsql.en.Join
-import com.diving.wsql.en.Oprerate
+import com.diving.wsql.en.Operate
 import com.diving.wsql.factory.QuerySqlFactory
 
 /**
@@ -124,12 +124,12 @@ class SelectBuilder(private  val sqlFactory: QuerySqlFactory) : HelpBuilder {
         logicOfExclude()
 
         val distinct = if (isDistinct) "distinct" else ""
-        val sql = "${Oprerate.SELECT.string}  $distinct $FIELDS_CHARACTER_IN_SQL from $tableName $UK_CHARACTER_IN_SQL "
+        val sql = "${Operate.SELECT.string}  $distinct $FIELDS_CHARACTER_IN_SQL from $tableName $UK_CHARACTER_IN_SQL "
         sqlFactory.appendSql(uk!!, sql, tableName!!, true)
 
         if (innerUk !== null && innerConditionTerm != null && innerJoin !== null && innerTableName != null) {
             val innerSqlTerm = innerConditionTerm!!.getExpression(sqlFactory)
-            val innerSQl = " ${innerJoin!!.s} (${Oprerate.SELECT.string} * from $innerTableName) $UK_CHARACTER_IN_SQL on $innerSqlTerm "
+            val innerSQl = " ${innerJoin!!.s} (${Operate.SELECT.string} * from $innerTableName) $UK_CHARACTER_IN_SQL on $innerSqlTerm "
             sqlFactory.appendSql(innerUk!!, innerSQl, innerTableName!!, false)
         }
 

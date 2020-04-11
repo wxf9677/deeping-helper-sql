@@ -1,11 +1,10 @@
-package com.diving.wsql.annotations
+package com.diving.wsql.temp.annotations
 
-import com.diving.wsql.en.Oprerate
+import com.diving.wsql.en.Operate
 import java.lang.annotation.*
 import java.lang.annotation.Retention
 import java.lang.annotation.Target
 
-@Documented
 @Target( ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-annotation class Execute(val action:Oprerate,val distinct:Boolean=false)
+annotation class SqlExecute(val action:Operate, val distinct:Boolean=false)

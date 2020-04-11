@@ -1,8 +1,9 @@
-package com.diving.wsql.annotations
+package com.diving.wsql.temp
 
 import com.diving.wsql.core.getMethodsRecursive
 import com.diving.wsql.core.loadClasses
-import org.springframework.core.annotation.AnnotationUtils
+import com.diving.wsql.temp.annotations.SqlExecute
+import com.diving.wsql.temp.annotations.SqlQuery
 
 class AbstractQueryFactory : QueryFactory {
 
@@ -37,17 +38,17 @@ class AbstractQueryFactory : QueryFactory {
 
 
     fun filterQueryDtos() {
-        clazzs?.filter { it.isAnnotationPresent(Query::class.java) }?.forEach { sss2(it) }
+        clazzs?.filter { it.isAnnotationPresent(SqlQuery::class.java) }?.forEach { sss2(it) }
     }
 
 
     fun sss2(clazz: Class<*>) {
-        val methods = clazz.getMethodsRecursive().filter { it.isAnnotationPresent(Execute::class.java) }
+        val methods = clazz.getMethodsRecursive().filter { it.isAnnotationPresent(SqlExecute::class.java) }
 
 
 
         methods.forEach {
-            sqlAssertContext["${clazz.name}$${it.name}"]=SqlTemplateIml().makeSql(clazz,it)
+            //sqlAssertContext["${clazz.name}$${it.name}"]=SqlTemplateIml().makeSql(clazz,it)
         }
 
 

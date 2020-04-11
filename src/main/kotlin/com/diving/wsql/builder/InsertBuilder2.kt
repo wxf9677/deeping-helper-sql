@@ -2,7 +2,7 @@ package com.diving.wsql.builder
 
 import com.diving.wsql.Utils
 import com.diving.wsql.core.stuffToString
-import com.diving.wsql.en.Oprerate
+import com.diving.wsql.en.Operate
 import com.diving.wsql.factory.ExecuteSqlFactory
 
 /**
@@ -46,7 +46,7 @@ class InsertBuilder2(private val sqlFactory: ExecuteSqlFactory) : HelpBuilder {
             }
         }.stuffToString()
 
-        val sql = "${Oprerate.INSERT} into $tableName ($f)  values($v)"
+        val sql = "${Operate.INSERT} into $tableName ($f)  values($v)"
         sqlFactory.appendSql(sql)
     }
 

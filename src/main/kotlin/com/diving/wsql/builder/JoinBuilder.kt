@@ -8,7 +8,7 @@ import com.diving.wsql.Utils.makeMountFieldKey
 import com.diving.wsql.bean.*
 import com.diving.wsql.core.getFieldsRecursive
 import com.diving.wsql.en.Join
-import com.diving.wsql.en.Oprerate
+import com.diving.wsql.en.Operate
 import java.util.*
 
 /**
@@ -141,13 +141,13 @@ class JoinBuilder(private val sqlFactory: QuerySqlFactory) : HelpBuilder {
             if (innerUk !== null && innerConditionTerm != null && innerJoin !== null && innerTableName != null) {
                 val innerSqlTerm = innerConditionTerm!!.getExpression(sqlFactory)
                 val innerSQl =
-                        " ${innerJoin!!.s} (${Oprerate.SELECT.string} * from $innerTableName) $UK_CHARACTER_IN_SQL on $innerSqlTerm "
+                        " ${innerJoin!!.s} (${Operate.SELECT.string} * from $innerTableName) $UK_CHARACTER_IN_SQL on $innerSqlTerm "
                 sqlFactory.appendSql(innerUk!!, innerSQl, innerTableName!!, false)
             }
             val fieldKey = makeMountFieldKey(tUk!!, tFieldName!!)
             sqlFactory.setFieldKey(fieldKey)
             var inSql = LinkedList<SqlTemp>()
-            inSql.add(SqlTemp("", "${Oprerate.SELECT.string} * from $tableName", "", false))
+            inSql.add(SqlTemp("", "${Operate.SELECT.string} * from $tableName", "", false))
             SqlSplitUtils.makePagedSql(pagedSql, inSql, indexUk, indexKey, whereSql, s)
             val sqlBody = "${join!!.s} (${inSql.mapNotNull { it.sql }.stuffToString(" ")} ) $UK_CHARACTER_IN_SQL "
             val sql = "$sqlBody $sqlTerm"

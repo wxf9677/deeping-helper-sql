@@ -2,7 +2,7 @@ package com.diving.wsql.builder
 
 import com.diving.wsql.Utils
 import com.diving.wsql.core.stuffToString
-import com.diving.wsql.en.Oprerate
+import com.diving.wsql.en.Operate
 import com.diving.wsql.factory.ExecuteSqlFactory
 
 /**
@@ -40,7 +40,7 @@ class UpdateBuilder(private  val sqlFactory: ExecuteSqlFactory) : HelpBuilder {
                     "${Utils.formatSqlField(it.key)}= ${it.value}"
                 }
             }.stuffToString()
-            val sql = "${Oprerate.UPDATE}  $tableName SET $f $whereSql"
+            val sql = "${Operate.UPDATE}  $tableName SET $f $whereSql"
             sqlFactory.appendSql(sql)
         }
     }

@@ -7,7 +7,7 @@ import com.diving.wsql.core.stuffToString
 import com.diving.wsql.factory.QuerySqlFactory
 import com.diving.wsql.bean.*
 import com.diving.wsql.en.Join
-import com.diving.wsql.en.Oprerate
+import com.diving.wsql.en.Operate
 import java.util.*
 
 /**
@@ -101,7 +101,7 @@ class ReDirectBuilder(private val sqlFactory: QuerySqlFactory) : com.diving.wsql
             inSql.add(
                     SqlTemp(
                             "",
-                            "${Oprerate.SELECT.string} ${termFields()} from $tableName  ",
+                            "${Operate.SELECT.string} ${termFields()} from $tableName  ",
                             "",
                             false
                     )

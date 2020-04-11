@@ -5,11 +5,25 @@ import com.diving.wsql.builder.MOUNTKEY_SPLIT
 import com.diving.wsql.builder.OBJ_SPLIT
 import com.diving.wsql.core.checkException
 import com.diving.wsql.core.getFieldsRecursive
+import com.diving.wsql.core.getInterfaceRecursive
+import com.diving.wsql.temp.QP
 import java.lang.reflect.Field
 import java.lang.reflect.ParameterizedType
 import java.sql.Timestamp
 
 object Utils {
+
+
+    fun makeSingleSubClassKey(qp: QP): String {
+        return "${qp.uk}$OBJ_SPLIT${qp.field.name}"
+    }
+
+
+
+
+
+
+
 
     fun formatSqlField(field: String): String {
         val f = StringBuffer()
@@ -45,12 +59,14 @@ object Utils {
         return "$uk$MOUNTKEY_SPLIT$fieldName"
     }
 
+    @Deprecated("")
     fun makeSingleSubClassKey(gd: com.diving.wsql.bean.QD): String {
         require(!(gd.mountUk.contains(OBJ_SPLIT) || gd.mountFieldKey.contains(OBJ_SPLIT))) { "the mountUk or mountFieldKey can not contains a char with $OBJ_SPLIT" }
         return "${gd.mountUk}$OBJ_SPLIT${gd.mountFieldKey}"
     }
 
 
+    @Deprecated("")
     fun makeSingleClassKey(gd: com.diving.wsql.bean.QD): String {
         return "${gd.mountUk}$OBJ_SPLIT${gd.clazz.name}"
     }
@@ -70,7 +86,7 @@ object Utils {
     fun checkClazzType(f: Field?, clazz: Class<*>?): Pair<Boolean, Boolean> {
         f ?: return false to false
         clazz ?: return false to false
-        return if (f.type == List::class.java) {
+        return if ( f.type.getInterfaceRecursive().contains( Iterable::class.java)) {
             // 如果是List类型，得到其Generic的类型
             val genericType = f.genericType;
             // 如果是泛型参数的类型
@@ -92,7 +108,7 @@ object Utils {
 
 
     fun getClazzType(f: Field): Class<*> {
-        return if (f.type == List::class.java) {
+        return if (f.type.getInterfaceRecursive().contains( Iterable::class.java)) {
             // 如果是List类型，得到其Generic的类型
             val genericType = f.genericType;
             // 如果是泛型参数的类型
