@@ -3,9 +3,7 @@ package com.diving.wsql.temp
 import com.diving.wsql.GsonUtil
 import com.diving.wsql.Utils
 import com.diving.wsql.Utils.checkValueFix
-import com.diving.wsql.bean.QueryDto
 import com.diving.wsql.core.checkException
-import com.diving.wsql.core.getFieldsRecursive
 import com.diving.wsql.temp.en.QP
 import com.google.gson.Gson
 import java.lang.reflect.Field
@@ -14,19 +12,19 @@ import javax.persistence.EntityManager
 
 class QueryUtil {
     //临时存储每条数据库数据装好的类，用完清空
-    private val readTempList = LinkedHashMap<String, QueryDto>()
+    private val readTempList = LinkedHashMap<String, Any>()
     //存储结果集中的子对象
-    private val subObjectList = LinkedHashMap<String, QueryDto>()
+    private val subObjectList = LinkedHashMap<String, Any>()
     //存储结果集
-    private val objectList = LinkedHashMap<String, QueryDto>()
+    private val objectList = LinkedHashMap<String, Any>()
     //qp装载器
     private lateinit var qpMaker: QPMaker
 
-    fun query(clazz: Class<*>, entityManager: EntityManager): List<QueryDto> {
+    fun <T>query(clazz: Class<T>, entityManager: EntityManager): List<T> {
         qpMaker = QPMaker(clazz)
         val query = entityManager.createNativeQuery(qpMaker.sql.toString())
         query.resultList.forEachIndexed { index, any -> classFilling(qpMaker.superQp, any) }
-        return objectList.map { it.value }
+        return objectList.map { it.value as T}
     }
 
     //把查询到的结果根据QP装进对象
@@ -64,7 +62,7 @@ class QueryUtil {
     }
 
 
-    private fun getSuperObject(queryDto: QueryDto?, qp: QP): QueryDto? {
+    private fun getSuperObject(queryDto: Any?, qp: QP): Any? {
         queryDto ?: return null
         val key = MakeUtil.makeMappingKey(qp) + Gson().toJson(queryDto)
         if (objectList[key] == null) {
@@ -73,15 +71,15 @@ class QueryUtil {
         return objectList[key]
     }
 
-    private fun getTempObject(qp: QP, autoCreate: Boolean): QueryDto? {
+    private fun getTempObject(qp: QP, autoCreate: Boolean): Any? {
         val key = MakeUtil.makeMappingKey(qp)
         if (readTempList[key] == null && autoCreate) {
-            readTempList[key] = qp.getMountFieldClass().newInstance() as QueryDto
+            readTempList[key] = qp.getMountFieldClass().newInstance()
         }
         return readTempList[key]
     }
 
-    private fun getSubObject(queryDto: QueryDto?, qp: QP): QueryDto? {
+    private fun getSubObject(queryDto: Any?, qp: QP): Any? {
         queryDto ?: return null
         val key = MakeUtil.makeMappingKey(qp) + Gson().toJson(queryDto)
         if (subObjectList[key] == null) {
@@ -91,7 +89,7 @@ class QueryUtil {
     }
 
 
-    private fun assemble(qp: QP): QueryDto? {
+    private fun assemble(qp: QP): Any? {
         //获取qp对应的存储对象
         val obj = if (qp.isSuper())
             getSuperObject(getTempObject(qp, false), qp)
@@ -116,7 +114,7 @@ class QueryUtil {
         return snakeMap
     }
 
-    private fun putToObj(m: Map.Entry<String, QP>, obj: QueryDto): QueryDto? {
+    private fun putToObj(m: Map.Entry<String, QP>, obj: Any): Any? {
         //qd挂载的class对象
         val qp = m.value
         //获取当前qp所挂载的class
@@ -136,30 +134,21 @@ class QueryUtil {
             getTempObject(qp, false)
         }
         subClass ?: return null
-
         if (qp.isCollection) {
             require(check.second) { "the class ${clazz.simpleName} must be a collection" }
-
-            val fieldClass = field.get(obj) as? List<QueryDto>
-            val l = mutableListOf<QueryDto>()
+            val fieldClass = field.get(obj) as? Collection<Any>
+            val list = mutableListOf<Any>()
             if (fieldClass.isNullOrEmpty()) {
-                l.add(subClass)
-                field.set(obj, l)
+                list.add(subClass)
             } else {
-                val isContains = fieldClass.find { GsonUtil.toJson(it) == GsonUtil.toJson(subClass) } != null
-                if (isContains) {
-                    l.addAll(fieldClass)
-                    field.set(obj, l)
-                } else {
-                    l.addAll(fieldClass)
-                    l.add(subClass)
-                    field.set(obj, l)
+                val isContains = fieldClass.map { GsonUtil.toJson(it) }.contains(GsonUtil.toJson(subClass))
+                list.addAll(fieldClass)
+                if (!isContains) {
+                    list.add(subClass)
                 }
-
             }
+            field.set(obj, list)
         } else {
-
-
             val s = field.get(obj)
             if (GsonUtil.toJson(s) != GsonUtil.toJson(subClass)) {
                 field.set(obj, subClass)
