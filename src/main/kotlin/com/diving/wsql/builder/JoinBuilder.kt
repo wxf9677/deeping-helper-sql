@@ -140,8 +140,7 @@ class JoinBuilder(private val sqlFactory: QuerySqlFactory) : HelpBuilder {
             logicOfExclude()
             if (innerUk !== null && innerConditionTerm != null && innerJoin !== null && innerTableName != null) {
                 val innerSqlTerm = innerConditionTerm!!.getExpression(sqlFactory)
-                val innerSQl =
-                        " ${innerJoin!!.s} (${Operate.SELECT.string} * from $innerTableName) $UK_CHARACTER_IN_SQL on $innerSqlTerm "
+                val innerSQl = " ${innerJoin!!.s} (${Operate.SELECT.string} * from $innerTableName) $UK_CHARACTER_IN_SQL on $innerSqlTerm "
                 sqlFactory.appendSql(innerUk!!, innerSQl, innerTableName!!, false)
             }
             val fieldKey = makeMountFieldKey(tUk!!, tFieldName!!)

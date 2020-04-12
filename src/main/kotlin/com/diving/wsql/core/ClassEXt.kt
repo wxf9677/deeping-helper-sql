@@ -37,6 +37,17 @@ fun Class<*>.getMethodsRecursive(): MutableList<Method> {
 }
 
 
+fun Class<*>.getFieldClassRecursive(): MutableList<Class<*>> {
+    val methodList = mutableListOf<Class<*>>()
+    var tempClass: Class<*>? = this
+    while (tempClass != null) {//当父类为null的时候说明到达了最上层的父类(Object类).
+        methodList.add(tempClass)
+        tempClass = tempClass.superclass //得到父类,然后赋给自己
+    }
+    return methodList
+}
+
+
 fun Class<*>.getInterfaceRecursive(): MutableList<Class<*>> {
     val interfaces = mutableListOf<Class<*>>()
     recursiveInterface(this, interfaces)

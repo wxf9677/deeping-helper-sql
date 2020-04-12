@@ -261,7 +261,7 @@ class QuerySqlHelper(val sql: String,
                     }
 
                 } else {
-                    throw IllegalAccessException(" the field type  is ${field.type.name},the clazz type  is ${qd.clazz.name} they are not fixed")
+                    throw IllegalAccessException(" the field type  is ${field.type.simpleName},the clazz type  is ${qd.clazz.name} they are not fixed")
 
                 }
             } else {

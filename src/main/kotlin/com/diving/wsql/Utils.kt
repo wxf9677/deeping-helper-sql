@@ -6,7 +6,7 @@ import com.diving.wsql.builder.OBJ_SPLIT
 import com.diving.wsql.core.checkException
 import com.diving.wsql.core.getFieldsRecursive
 import com.diving.wsql.core.getInterfaceRecursive
-import com.diving.wsql.temp.QP
+import com.diving.wsql.temp.en.QP
 import java.lang.reflect.Field
 import java.lang.reflect.ParameterizedType
 import java.sql.Timestamp
@@ -14,16 +14,13 @@ import java.sql.Timestamp
 object Utils {
 
 
-    fun makeSingleSubClassKey(qp: QP): String {
-        return "${qp.uk}$OBJ_SPLIT${qp.field.name}"
+    fun isFieldIterable(field: Field): Boolean {
+        return isFieldIterable(field.type)
     }
 
-
-
-
-
-
-
+    fun isFieldIterable(clazz: Class<*>): Boolean {
+        return clazz.getInterfaceRecursive().contains(Iterable::class.java)
+    }
 
     fun formatSqlField(field: String): String {
         val f = StringBuffer()
@@ -76,17 +73,19 @@ object Utils {
 
         val fields = supperClazz.getFieldsRecursive()
         val field = requireNotNull(fields.find { it.name == fieldName }) { "the fieldName :$fieldName is not in class ${supperClazz.simpleName}" }
-        require(checkClazzType(field, clazz).first) { "the clazz from fieldNa" +
-            "me:$fieldName type is not fixed " +
-            "the Field named $fieldName's type is ${field.type.name}, " +
-            "but class's type is ${clazz.simpleName}" }
+        require(checkClazzType(field, clazz).first) {
+            "the clazz from fieldNa" +
+                    "me:$fieldName type is not fixed " +
+                    "the Field named $fieldName's type is ${field.type.simpleName}, " +
+                    "but class's type is ${clazz.simpleName}"
+        }
         return true
     }
 
     fun checkClazzType(f: Field?, clazz: Class<*>?): Pair<Boolean, Boolean> {
         f ?: return false to false
         clazz ?: return false to false
-        return if ( f.type.getInterfaceRecursive().contains( Iterable::class.java)) {
+        return if (isFieldIterable(f)) {
             // 如果是List类型，得到其Generic的类型
             val genericType = f.genericType;
             // 如果是泛型参数的类型
@@ -108,7 +107,7 @@ object Utils {
 
 
     fun getClazzType(f: Field): Class<*> {
-        return if (f.type.getInterfaceRecursive().contains( Iterable::class.java)) {
+        return if (isFieldIterable(f)) {
             // 如果是List类型，得到其Generic的类型
             val genericType = f.genericType;
             // 如果是泛型参数的类型
@@ -125,7 +124,26 @@ object Utils {
         } else {
             f.type
         }
+    }
 
+    fun getClazzType(clazz: Class<*>): Class<*> {
+        return if (isFieldIterable(clazz)) {
+            // 如果是List类型，得到其Generic的类型
+            val genericType = clazz.genericSuperclass
+            // 如果是泛型参数的类型
+            if (genericType is ParameterizedType) {
+                //得到泛型里的class类型对象
+                val classType = genericType.actualTypeArguments[0]
+                if (classType == Integer::class.java)
+                    Int::class.java
+                else
+                    Class.forName(classType.typeName.replace("? extends", "").trim())
+            } else {
+                Class.forName(genericType.typeName.replace("? extends", "").trim())
+            }
+        } else {
+            clazz
+        }
     }
 
 
@@ -163,20 +181,10 @@ object Utils {
 
     fun checkValueFix(values: Any?, keys: Collection<*>) {
         when (values) {
-            null -> {
-                throw IllegalArgumentException("sql result not fixed")
-            }
-            is Array<*> -> {
-                require(values.size == keys.size) { "sql result not fixed" }
-            }
-            is Collection<*> -> {
-                require(values.size == keys.size) { "sql result not fixed" }
-            }
-            else->{
-                require(1 == keys.size) { "sql result not fixed" }
-            }
+            null -> { throw IllegalArgumentException("sql result not fixed") }
+            is Array<*> -> { require(values.size == keys.size) { "sql result not fixed" } }
+            is Collection<*> -> { require(values.size == keys.size) { "sql result not fixed" } }
+            else -> { require(1 == keys.size) { "sql result not fixed" } }
         }
-
-
     }
 }
