@@ -122,7 +122,7 @@ object SqlSplitUtils {
             //创造分页语句
             val temp = LinkedHashSet<com.diving.wsql.bean.SqlTemp>()
             //先把主句柄加进来
-            val mainSql = requireNotNull(sqlTemp.find { it.sql.contains(FIELDS_CHARACTER_IN_SQL)} ){"the main sql must contains FIELDS_CHARACTER_IN_SQL"}
+            val mainSql = requireNotNull(sqlTemp.find { it.sql.contains(FIELDS_CHARACTER_IN_SQL)} ){"the isSuper sql must contains FIELDS_CHARACTER_IN_SQL"}
             temp.add(mainSql)
             //迭代添加包含关键uk的句柄
             filterSql(temp, sqlTemp, includeKeys)
@@ -170,7 +170,7 @@ object SqlSplitUtils {
         //创造分页语句
         val temp = LinkedHashSet<com.diving.wsql.bean.SqlTemp>()
         //先把主句柄加进来
-        val mainSql = requireNotNull( sqlTemp.find { it.sql.contains(FIELDS_CHARACTER_IN_SQL) } ){"the sql select count lost main word"}
+        val mainSql = requireNotNull( sqlTemp.find { it.sql.contains(FIELDS_CHARACTER_IN_SQL) } ){"the sql select count lost isSuper word"}
         temp.add(mainSql)
         //迭代添加包含关键uk的句柄
         filterSql(temp, sqlTemp, includeKeys)
