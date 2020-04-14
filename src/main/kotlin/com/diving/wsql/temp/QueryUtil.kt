@@ -4,6 +4,7 @@ import com.diving.wsql.GsonUtil
 import com.diving.wsql.Utils
 import com.diving.wsql.Utils.checkValueFix
 import com.diving.wsql.core.checkException
+import com.diving.wsql.temp.en.OPTIONS
 import com.diving.wsql.temp.en.QP
 import com.google.gson.Gson
 import java.lang.reflect.Field
@@ -18,19 +19,20 @@ class QueryUtil {
     //存储结果集
     private val objectList = LinkedHashMap<String, Any>()
     //qp装载器
-    private lateinit var qpMaker: QPMaker
+    private lateinit var options: OPTIONS
 
-    fun <T>query(clazz: Class<T>, entityManager: EntityManager): List<T> {
-        qpMaker = QPMaker(clazz)
-        val query = entityManager.createNativeQuery(qpMaker.sql.toString())
-        query.resultList.forEachIndexed { index, any -> classFilling(qpMaker.superQp, any) }
+    fun <T>query(o: OPTIONS, entityManager: EntityManager): List<T> {
+        options = o
+        val query = entityManager.createNativeQuery(options.sql.toString())
+        query.resultList.forEachIndexed { index, any -> classFilling(options.superQp, any) }
         return objectList.map { it.value as T}
     }
+
 
     //把查询到的结果根据QP装进对象
     private fun classFilling(qp: QP, data: Any?) {
         //判断返回的结果集数量和查询字段数量是否符合
-        checkValueFix(data, qpMaker.query)
+        checkValueFix(data, options.query)
         //收集数据库返回的每条数据并装进临时对象
         makeTempObject(data)
         //把临时对象拼装起来
@@ -39,7 +41,7 @@ class QueryUtil {
     }
 
     private fun makeTempObject(data: Any?) {
-        qpMaker.query.forEachIndexed { index, q ->
+        options.query.forEachIndexed { index, q ->
             val field = requireNotNull(q.field) { "only mainQp will lost it's field ,please check code" }
             var result = if (data is Array<*>) {
                 checkException({ data[index] }) ?: return@forEachIndexed
@@ -104,7 +106,7 @@ class QueryUtil {
 
 
     private fun getSubObjectQp(qp: QP): MutableMap<String, QP> {
-        val attach = qpMaker.query.filter { it.mountUk == qp.fixUk && it.mountUk != it.fixUk }
+        val attach = options.query.filter { it.mountUk == qp.fixUk && it.mountUk != it.fixUk }
         val snakeMap = mutableMapOf<String, QP>()
         attach.forEach {
             if (snakeMap["${it.mountUk}-${it.getMountFieldName()}"] == null) {
@@ -122,7 +124,7 @@ class QueryUtil {
         //获取当前class下面所有的field
         val field = qp.mountField!!
         //如果当前qd下面挂载了子对象
-        val isInnerDir = qpMaker.query.any { it.mountUk == qp.fixUk }
+        val isInnerDir = options.query.any { it.mountUk == qp.fixUk }
         //获取当前qd所在类的类是否是一个collection
         val check = Utils.checkClazzType(field, qp.getMountFieldClass())
         require(check.first) { "the field ${field.name}'s genericType  is not ${qp.getMountFieldName()}" }
@@ -153,8 +155,6 @@ class QueryUtil {
             if (GsonUtil.toJson(s) != GsonUtil.toJson(subClass)) {
                 field.set(obj, subClass)
             }
-
-
         }
         return obj
     }

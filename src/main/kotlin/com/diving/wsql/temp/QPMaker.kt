@@ -1,7 +1,6 @@
 package com.diving.wsql.temp
 
 import com.diving.wsql.Utils
-import com.diving.wsql.bean.SqlTemp
 import com.diving.wsql.builder.FIELDS_CHARACTER_IN_SQL
 import com.diving.wsql.builder.MOUNTKEY_SPLIT
 import com.diving.wsql.builder.UK_CHARACTER_IN_SQL
@@ -9,7 +8,9 @@ import com.diving.wsql.core.getFieldsRecursive
 import com.diving.wsql.en.Arithmetic
 import com.diving.wsql.en.Operate
 import com.diving.wsql.temp.annotations.*
+import com.diving.wsql.temp.en.OPTIONS
 import com.diving.wsql.temp.en.QP
+import com.diving.wsql.temp.en.SQL
 import org.springframework.core.annotation.AnnotationUtils
 import java.lang.reflect.Field
 import java.util.*
@@ -17,19 +18,24 @@ import kotlin.collections.ArrayList
 
 
 class QPMaker {
+
+
     private val selectFields = StringBuffer()
     val sql = StringBuffer()
     val superQp: QP
     val query: MutableList<QP> = mutableListOf()
-    val sqlTemp = LinkedList<SqlTemp>()
+    val sqlTemp = LinkedList<SqlTemp2>()
     val ukPool = ArrayList<String>()
 
 
-    private fun appendSql(uk: String, sql: String, tableName: String, isSuper: Boolean) {
+    private fun appendSql(uk: String, sql: SQL, isSuper: Boolean) {
         require(!uk.contains(MOUNTKEY_SPLIT)) { "the uk or fieldName can not contains a char with $MOUNTKEY_SPLIT" }
         fitUk(uk)
-        sqlTemp.add(SqlTemp(uk, sql, tableName, isSuper))
+        sqlTemp.add(SqlTemp2(uk, sql, isSuper))
     }
+
+
+
 
 
     private fun fitUk(uk: String) {
@@ -39,20 +45,28 @@ class QPMaker {
     }
 
 
-    constructor(clazz: Class<*>) {
+     fun make(): OPTIONS {
+        MakeUtil.makeSqlSelectionFields(selectFields, query)
+        MakeUtil.makeUrl(sql, selectFields, sqlTemp)
+         return OPTIONS(sql.toString(),query,superQp)
+    }
+
+
+     constructor(clazz: Class<*>) {
         val csn = AnnotationUtils.findAnnotation(clazz, SqlQuery::class.java)
         requireNotNull(csn) { "the class:${clazz.simpleName} must DI with Query" }
         requireNotNull(csn.uk) { "the class:${clazz.simpleName} lost uk in Query" }
         val tableName = csn.tableName
         val uk = csn.uk
         val distinct = if (csn.distinct) "distinct" else ""
-        appendSql(uk, "${Operate.SELECT.string} $distinct $FIELDS_CHARACTER_IN_SQL from $tableName $UK_CHARACTER_IN_SQL ", tableName, true)
+
+        val sqlBuilder = SQL("", Operate.SELECT.string, distinct, FIELDS_CHARACTER_IN_SQL, tableName, UK_CHARACTER_IN_SQL, "", "")
+        appendSql(uk, sqlBuilder, true)
         //主要qp
         superQp = QP(uk, uk, uk, "", null, null, false, false, clazz)
         makeQuery(superQp)
         require(query.isNotEmpty()) { "query is empty,makeSelection fail" }
-        MakeUtil.makeSqlSelectionFields(selectFields, query)
-        MakeUtil.makeUrl(sql, selectFields, sqlTemp)
+
     }
 
 
@@ -166,10 +180,11 @@ class QPMaker {
         val targetUk: String = join.targetUk
         val targetFieldName: String = join.targetFieldName
         val joinString: String = join.join.s
-        val sqlTerm: String = MakeUtil.makeConditionValue(uk, fieldName, arithmetic, targetUk, targetFieldName)
-        val sqlBody = "$joinString ( ${Operate.SELECT.string} * from $tableName  ) $UK_CHARACTER_IN_SQL "
-        val sql = "$sqlBody on $sqlTerm"
-        appendSql(uk!!, sql, tableName!!, false)
+        val sqlTerm: String = "on " + MakeUtil.makeConditionValue(uk, fieldName, arithmetic, targetUk, targetFieldName)
+
+        val sqlBuilder = SQL(joinString, Operate.SELECT.string, "", "*", tableName, UK_CHARACTER_IN_SQL, "", sqlTerm)
+
+        appendSql(uk!!, sqlBuilder, false)
         return uk
     }
 
@@ -183,9 +198,10 @@ class QPMaker {
         val innerArithmetic = innerJoin.arithmetic
         val innerTargetUk = innerJoin.targetUk
         val innerTargetFieldName = innerJoin.targetFieldName
-        val innerSqlTerm = MakeUtil.makeConditionValue(innerUk, innerFieldName, innerArithmetic, innerTargetUk, innerTargetFieldName)
-        val innerSQl = " $innerJ (${Operate.SELECT.string} * from $innerTableName) $UK_CHARACTER_IN_SQL on $innerSqlTerm "
-        appendSql(innerUk!!, innerSQl, innerTableName!!, false)
+        val innerSqlTerm = "on " + MakeUtil.makeConditionValue(innerUk, innerFieldName, innerArithmetic, innerTargetUk, innerTargetFieldName)
+        val innersqlBuilder = SQL(innerJ, Operate.SELECT.string, "", "*", innerTableName, UK_CHARACTER_IN_SQL, "", innerSqlTerm)
+
+        appendSql(innerUk!!, innersqlBuilder, false)
 
         val tableName: String = join.tableName
         val uk: String = join.uk
@@ -194,10 +210,10 @@ class QPMaker {
         val targetUk: String = join.targetUk
         val targetFieldName: String = join.targetFieldName
         val joinString: String = join.join.s
-        val sqlTerm = MakeUtil.makeConditionValue(uk!!, fieldName!!, arithmetic!!, targetUk!!, targetFieldName!!)
-        val sqlBody = "$joinString ( ${Operate.SELECT.string} * from $tableName  ) $UK_CHARACTER_IN_SQL "
-        val sql = "$sqlBody on $sqlTerm"
-        appendSql(uk!!, sql, tableName!!, false)
+        val sqlTerm = "on " + MakeUtil.makeConditionValue(uk!!, fieldName!!, arithmetic!!, targetUk!!, targetFieldName!!)
+        val sqlBuilder = SQL(joinString, Operate.SELECT.string, "", "*", tableName, UK_CHARACTER_IN_SQL, "", sqlTerm)
+
+        appendSql(uk, sqlBuilder, false)
         return uk
     }
 
