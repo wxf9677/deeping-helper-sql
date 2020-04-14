@@ -79,7 +79,7 @@ object MakeUtil {
     }
 
     fun makeUrl(sql: StringBuffer, selectFields: StringBuffer, sqlTemp: LinkedList<SqlTemp2>) {
-      sqlTemp.forEach {
+        sqlTemp.forEach {
             sql.append("")
             if (it.isSuper) {
                 sql.append(it.sql.make().replace(FIELDS_CHARACTER_IN_SQL, selectFields.toString()).replace(UK_CHARACTER_IN_SQL, it.uk))
@@ -87,21 +87,7 @@ object MakeUtil {
                 sql.append(it.sql.make().replace(UK_CHARACTER_IN_SQL, it.uk))
             }
         }
-        println("*******************")
-        println("*******************")
-        println("*******************")
-        println(sql)
-        println("*******************")
-        println("*******************")
-        println("*******************")
     }
-
-
-
-
-
-
-
 }
 
 

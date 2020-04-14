@@ -1,10 +1,15 @@
 package com.diving.wsql.temp
 
+import com.diving.wsql.SqlSplitUtils
 import com.diving.wsql.Utils
+import com.diving.wsql.bean.Alias
+import com.diving.wsql.bean.Redirect
+import com.diving.wsql.bean.SqlTemp
 import com.diving.wsql.builder.FIELDS_CHARACTER_IN_SQL
 import com.diving.wsql.builder.MOUNTKEY_SPLIT
 import com.diving.wsql.builder.UK_CHARACTER_IN_SQL
 import com.diving.wsql.core.getFieldsRecursive
+import com.diving.wsql.core.stuffToString
 import com.diving.wsql.en.Arithmetic
 import com.diving.wsql.en.Operate
 import com.diving.wsql.temp.annotations.*
@@ -35,9 +40,6 @@ class QPMaker {
     }
 
 
-
-
-
     private fun fitUk(uk: String) {
         require(!ukPool.contains(uk)) { "the uk:$uk is exist in ukPool ,can not add duplicate" }
         require(!MakeUtil.tactfulWord.contains(uk)) { "uk:$uk is tactful in sql " }
@@ -45,14 +47,14 @@ class QPMaker {
     }
 
 
-     fun make(): OPTIONS {
+    fun make(): OPTIONS {
         MakeUtil.makeSqlSelectionFields(selectFields, query)
         MakeUtil.makeUrl(sql, selectFields, sqlTemp)
-         return OPTIONS(sql.toString(),query,superQp)
+        return OPTIONS(sql.toString(), query, superQp)
     }
 
 
-     constructor(clazz: Class<*>) {
+    constructor(clazz: Class<*>) {
         val csn = AnnotationUtils.findAnnotation(clazz, SqlQuery::class.java)
         requireNotNull(csn) { "the class:${clazz.simpleName} must DI with Query" }
         requireNotNull(csn.uk) { "the class:${clazz.simpleName} lost uk in Query" }
@@ -63,7 +65,7 @@ class QPMaker {
         val sqlBuilder = SQL("", Operate.SELECT.string, distinct, FIELDS_CHARACTER_IN_SQL, tableName, UK_CHARACTER_IN_SQL, "", "")
         appendSql(uk, sqlBuilder, true)
         //主要qp
-        superQp = QP(uk, uk, uk, "", null, null, false, false, clazz)
+        superQp = QP(uk, uk,  uk,"", null, null, false, false, clazz)
         makeQuery(superQp)
         require(query.isNotEmpty()) { "query is empty,makeSelection fail" }
 
@@ -83,7 +85,7 @@ class QPMaker {
         val clazz: Class<*>
         val isCollection: Boolean
         val mountFiled: Field?
-        var uk: String
+        var uk: String? = null
         val mountUk = qp.fixUk
         val superClazz = qp.superClazz
         val field = qp.field
@@ -92,40 +94,28 @@ class QPMaker {
 
         //说明这是主类
         if (qp.isSuper()) {
-            uk = requireNotNull(sqlTemp.find { it.isSuper }?.uk) { "the super uk is lost" }
+            uk = sqlTemp.find { it.isSuper }?.uk
             clazz = superClazz
             isCollection = false
             mountFiled = null
         } else {
-            uk = makeClassFieldUk(field!!)
-            clazz = Utils.getClazzType(field)
+            clazz = Utils.getClazzType(field!!)
             isCollection = Utils.isFieldIterable(field)
             mountFiled = field
-
-            //如果该字段有排除注解则不需要查询
-            val excludeResult = makeExclude(field)
-            if (!excludeResult) {
-                return emptyList()
-            }
-            //join
-            val middleJoinResult = makeMiddleJoin(field)
-            val joinResult = makeJoin(field)
-            if (middleJoinResult == null && joinResult == null) {
-                return emptyList()
-            }
-            if (middleJoinResult != null) {
-                require(uk == middleJoinResult) { "the uk in SqlJoinMiddle on ${field.name} must be like  $uk " }
-            }
-            if (joinResult != null) {
-                require(uk == joinResult) { "the uk in SqlJoin on ${field.name} must be like  $uk " }
-            }
+            makeMiddleJoin(field)?.apply { uk = this }
+            makeJoin(field)?.apply { uk = this }
         }
 
+        if (uk == null) {
+            return emptyList()
+        }
 
         return clazz.getFieldsRecursive().mapNotNull { field ->
             var nowUk: String? = null
+            var thisUk: String = uk!!
             var sqlFieldName: String = field.name
             var isCustom = false
+
 
             if (Utils.isPrimitive(field)) {
                 //exclude
@@ -139,21 +129,17 @@ class QPMaker {
                     sqlFieldName = fieldNameResult
                 }
                 //redirect
-                makerDirect(field)
+                makerDirect(field){uk,newInvalidFieldName,isInResult->
+                    nowUk=uk
+                    sqlFieldName=newInvalidFieldName
+                    isCustom=isInResult
 
+                }
 
             }
 
-            QP(nowUk ?: uk!!, mountUk, uk!!, sqlFieldName, field, mountFiled, isCollection, isCustom, superClazz)
+            QP(nowUk ?: thisUk,mountUk, thisUk, sqlFieldName, field, mountFiled, isCollection, isCustom, superClazz)
         }
-    }
-
-
-    private fun makeClassFieldUk(field: Field): String {
-        val clazz = Utils.getClazzType(field!!)
-        return AnnotationUtils.findAnnotation(field, SqlUkDefined::class.java)?.uk
-                ?: requireNotNull(AnnotationUtils.findAnnotation(clazz, SqlQuery::class.java)) { "the class:${clazz.simpleName} must DI with SqlQuery" }.uk
-
     }
 
 
@@ -217,8 +203,39 @@ class QPMaker {
         return uk
     }
 
-    private fun makerDirect(field: Field) {
-        val frn = AnnotationUtils.findAnnotation(field, SqlRedirect::class.java)
+    private fun makerDirect(field: Field,callback:(String,String,Boolean)->Unit){
+        val join = AnnotationUtils.findAnnotation(field, SqlRedirect::class.java) ?: return
+        val tableName: String = join.tableName
+        val uk: String = join.uk
+        val fieldName: String = join.fieldName
+        val arithmetic: Arithmetic = join.arithmetic
+        val targetUk: String = join.targetUk
+        val targetFieldName: String = join.targetFieldName
+        val joinString: String = join.join.s
+        val sqlTerm = "on " + MakeUtil.makeConditionValue(uk!!, fieldName!!, arithmetic!!, targetUk!!, targetFieldName!!)
+
+        val isInResult= join.isInResult
+
+        val invalidFieldName=join.invalidFieldName
+
+
+      val newInvalidFieldName= if(isInResult){
+            "!isnull($uk.${Utils.formatSqlField(invalidFieldName)})"
+        }else{
+            invalidFieldName
+        }
+
+
+        val sqlBuilder = SQL(joinString, Operate.SELECT.string, "", "*", tableName, UK_CHARACTER_IN_SQL, "", sqlTerm)
+
+
+        val same = sqlTemp.find { it.uk == uk && it.sql.make() == sqlBuilder.make() }
+
+        if (same == null) {
+            appendSql(uk, sqlBuilder, false)
+        }
+
+        callback.invoke(uk,newInvalidFieldName,isInResult)
 
     }
 }

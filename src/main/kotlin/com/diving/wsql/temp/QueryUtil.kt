@@ -106,10 +106,9 @@ class QueryUtil {
 
 
     private fun getSubObjectQp(qp: QP): MutableMap<String, QP> {
-        val attach = options.query.filter { it.mountUk == qp.fixUk && it.mountUk != it.fixUk }
         val snakeMap = mutableMapOf<String, QP>()
-        attach.forEach {
-            if (snakeMap["${it.mountUk}-${it.getMountFieldName()}"] == null) {
+        options.query.forEach {
+            if (it.mountUk == qp.fixUk && it.mountUk != it.fixUk &&it.getMountFieldName().isNotEmpty()&&snakeMap["${it.mountUk}-${it.getMountFieldName()}"] == null){
                 snakeMap["${it.mountUk}-${it.getMountFieldName()}"] = it
             }
         }
