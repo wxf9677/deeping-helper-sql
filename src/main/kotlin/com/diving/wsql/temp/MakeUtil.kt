@@ -78,13 +78,13 @@ object MakeUtil {
         selectFields.replace(selectFields.lastIndexOf(","), selectFields.lastIndexOf(",") + 1, "")
     }
 
-    fun makeUrl(sql: StringBuffer, selectFields: StringBuffer, sqlTemp: LinkedList<SqlTemp>) {
+    fun makeUrl(sql: StringBuffer, selectFields: StringBuffer, sqlTemp: LinkedList<SqlTemp2>) {
       sqlTemp.forEach {
             sql.append("")
             if (it.isSuper) {
-                sql.append(it.sql.replace(FIELDS_CHARACTER_IN_SQL, selectFields.toString()).replace(UK_CHARACTER_IN_SQL, it.uk))
+                sql.append(it.sql.make().replace(FIELDS_CHARACTER_IN_SQL, selectFields.toString()).replace(UK_CHARACTER_IN_SQL, it.uk))
             } else {
-                sql.append(it.sql.replace(UK_CHARACTER_IN_SQL, it.uk))
+                sql.append(it.sql.make().replace(UK_CHARACTER_IN_SQL, it.uk))
             }
         }
         println("*******************")
@@ -95,6 +95,9 @@ object MakeUtil {
         println("*******************")
         println("*******************")
     }
+
+
+
 
 
 

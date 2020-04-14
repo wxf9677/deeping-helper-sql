@@ -13,4 +13,5 @@ public @interface SqlRedirect {
     String tableName();
     Join join();
     String uk();
+    boolean isInResult() default false;
 }

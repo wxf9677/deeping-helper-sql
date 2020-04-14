@@ -107,8 +107,7 @@ class ReDirectBuilder(private val sqlFactory: QuerySqlFactory) : com.diving.wsql
                     )
             )
             SqlSplitUtils.makePagedSql(pagedSql, inSql, indexUk, indexKey, whereSql, s)
-            val partSql =
-                    "${join!!.s} (${inSql.mapNotNull { it.sql }.stuffToString(" ")}) $UK_CHARACTER_IN_SQL $sqlTerm"
+            val partSql = "${join!!.s} (${inSql.mapNotNull { it.sql }.stuffToString(" ")}) $UK_CHARACTER_IN_SQL $sqlTerm"
             sqlFactory.appendSql(uk!!, partSql, tableName!!, false)
             sqlFactory.appendRedirect(redirects)
         }
