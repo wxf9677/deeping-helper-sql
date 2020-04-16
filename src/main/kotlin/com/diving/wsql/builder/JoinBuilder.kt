@@ -132,7 +132,7 @@ class JoinBuilder(private val sqlFactory: QuerySqlFactory) : HelpBuilder {
     fun where(): WhereBuilder {
         requireNotNull(join) { "join is needed,please setJoin first" }
         requireNotNull(tableName) { "tableName is needed,please setTableName first" }
-        requireNotNull(tUk) { "tUk is needed,please setRelationShip first" }
+        requireNotNull(tUk) { "targetUk is needed,please setRelationShip first" }
         requireNotNull(tFieldName) { "tFieldName is needed,please setRelationShip first" }
         requireNotNull(uk) { "uk is needed,please setUk first" }
 

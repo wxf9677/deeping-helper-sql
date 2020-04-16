@@ -10,13 +10,9 @@ import java.lang.annotation.Target;
 
 @Target({ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface SqlRedirect {
+public @interface SqlRedirectAllCount {
     String tableName();
-    Join join();
-    String fieldName();
+
     String uk();
-    Arithmetic arithmetic();
-    String targetUk();
-    String targetFieldName();
-    boolean isInResult() default false;
+
 }
