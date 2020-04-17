@@ -10,11 +10,10 @@ class SQL(
         val join: String="",
         val select: Operate=Operate.SELECT,
         val distinct: String="",
-        val params: String="",
+        var params: String="",
         val tableName: String="",
-
-        val uk: String="",
-        val where: String="",
+        var uk: String="",
+        var where: String?=null,
         val term :String="",
         val terms: List<Condition>
 
@@ -29,20 +28,13 @@ class SQL(
             ""
         }
     }
-    private fun getW(): String {
 
-        return if(where.isNotEmpty()){
-            "where $where"
-        }else{
-            ""
-        }
-    }
 
     fun make(): String {
        return if (join .isNotEmpty()) {
-           "$join (${select.string} $distinct $params  ${getTName()} ${getW()}) $uk $term ${terms.map { it.make() }.stuffToString(" and ")}"
+           "$join (${select.string} $distinct $params  ${getTName()} ${where?:""}) $uk $term ${terms.map { it.make() }.stuffToString(" and ")}"
        }else {
-           "${select.string} $distinct $params  ${getTName()} $uk ${getW()} "
+           "${select.string} $distinct $params  ${getTName()} $uk ${where?:""} "
        }
 
     }
