@@ -10,6 +10,4 @@ class ExecuteContext {
         val query = entityManager.createNativeQuery(o)
         return  query.executeUpdate()
     }
-
-
 }

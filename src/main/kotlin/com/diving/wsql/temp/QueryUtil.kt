@@ -17,9 +17,4 @@ class QueryUtil(val entityManager: EntityManager) {
         return QueryContext().queryCount(o,entityManager)
     }
 
-
-
-    fun insert(obj:Any): Int {
-        return ExecuteContext().execute("obj",entityManager)
-    }
 }
