@@ -6,6 +6,7 @@ import com.diving.wsql.core.stuffToString
 import com.diving.wsql.en.Direction
 import com.diving.wsql.temp.MakeUtil
 import java.util.*
+import kotlin.collections.LinkedHashSet
 
 /**
  * @package: com.diving.wsql.builder
@@ -16,13 +17,13 @@ import java.util.*
  * @version:
  **/
 class Where {
-    val conditionTerms = mutableListOf<Condition>()
-    val sorts = mutableSetOf<Triple<String?, String, Direction?>>()
-    var page: Int = 0
-    var size: Int = 0
-    var paged = false
-    var customPaged = false
-    var sorted = false
+   internal val conditionTerms = mutableSetOf<Condition>()
+    internal val sorts = mutableSetOf<Triple<String?, String, Direction?>>()
+    internal var page: Int = 0
+    internal var size: Int = 0
+    internal var paged = false
+    internal var customPaged = false
+    internal var sorted = false
 
     private var indexUk: String? = ""
     private var indexKey: String? = ""
@@ -56,14 +57,12 @@ class Where {
     }
 
 
-    fun make(sqlTemp: LinkedList<SQLTEMP>): String {
-
+    fun make(sqlTemp: LinkedHashSet<SQLTEMP>): String {
         val where = if (conditionTerms.isNotEmpty()) {
             " where ${conditionTerms.map { it.make() }.stuffToString("and")}"
         } else {
             ""
         }
-
         return if (paged && sorted) {
             makePagedSql(where,sqlTemp)
         } else if (paged && !sorted) {
@@ -73,14 +72,21 @@ class Where {
         } else {
             where
         }
+    }
 
-
+    fun makeCount(sqlTemp: LinkedHashSet<SQLTEMP>): String {
+        val where = if (conditionTerms.isNotEmpty()) {
+            " where ${conditionTerms.map { it.make() }.stuffToString("and")}"
+        } else {
+            ""
+        }
+       return MakeUtil.getTotalCountSql(sqlTemp,where,conditionTerms)
     }
 
 
-    private fun makePagedSql(where: String, sqlTemp: LinkedList<SQLTEMP>): String {
-        val newSql = StringBuffer()
 
+    private fun makePagedSql(where: String, sqlTemp: LinkedHashSet<SQLTEMP>): String {
+        val newSql = StringBuffer()
         val paged= if (customPaged) {
             indexKey = Utils.formatSqlField(indexKey!!)
             val offset = page!! * size!!
@@ -108,55 +114,4 @@ class Where {
         return newSql.toString()
 
     }
-
-
-    /*  fun endAndCreateCustomPage(): WherePageCustomBuilder2 {
-          return WherePageCustomBuilder2(sqlFactory) { pagedSql, uk, key ->
-              if (conditionTerms.toString() == prefix) {
-                  conditionTerms.setLength(0)
-              }
-              if (conditionTerms.isEmpty())
-                  doBefore.invoke(conditionTerms.toString(), " where $pagedSql", uk, key, selects)
-              else
-                  doBefore.invoke(conditionTerms.toString(), " and $pagedSql", uk, key, selects)
-          }
-      }
-  */
-
-
-/*    fun makePage(): WherePageBuilder2 {
-
-
-
-
-        sorts.forEach {
-            sqlFactory.isUkExist(it.first, true)
-        }
-        val pagedSql = if (paged) {
-            requireNotNull(page ){"page is needed,please setPage first"}
-            requireNotNull(size){"size is needed,please setPage first"}
-            val pagedSql = StringBuffer(MakeUtil.makeOrderSql("", sorts))
-            val offset = page!! * size!!
-            pagedSql.append(" limit ")
-            pagedSql.append(offset)
-            pagedSql.append(",")
-            pagedSql.append(size!!)
-            pagedSql.toString()
-        } else {
-            SqlSplitUtils.makeOrderSql("", sorts)
-        }
-        doBefore.invoke(pagedSql)
-
-
-
-
-        return WherePageBuilder2(sqlFactory) {
-            //如果前面只有前缀没有任何条件内容则清空内容
-            if (conditionTerms.toString() == prefix) {
-                conditionTerms.setLength(0)
-            }
-            conditionTerms.append(it)
-            doBefore.invoke(conditionTerms.toString(), null, null, null, selects)
-        }
-    }*/
 }

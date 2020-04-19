@@ -14,6 +14,7 @@ import com.diving.wsql.temp.en.SQLTEMP
 import com.diving.wsql.temp.en.Where
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.collections.LinkedHashSet
 
 object MakeUtil {
 
@@ -70,7 +71,7 @@ object MakeUtil {
     }
 
 
-    fun makeUrl(sql: StringBuffer, selectFields: StringBuffer, sqlTemp: LinkedList<SQLTEMP>) {
+    fun makeUrl(sql: StringBuffer, selectFields: StringBuffer, sqlTemp: LinkedHashSet<SQLTEMP>) {
         var finalWhere: Where? = null
         sqlTemp.forEach {
             sql.append("")
@@ -81,9 +82,20 @@ object MakeUtil {
                 sql.append(it.sql.make().replace(UK_CHARACTER_IN_SQL, it.uk))
             }
         }
-        sql.append(finalWhere?.make(sqlTemp))
+        finalWhere?.apply {sql.append(this.make(sqlTemp)) }
     }
 
+
+    fun makeCountUrl(sql: StringBuffer, sqlTemp: LinkedHashSet<SQLTEMP>) {
+        sql.append("")
+        var finalWhere: Where? = sqlTemp.find { it.isSuper }?.where
+
+        finalWhere?.apply {
+
+
+            sql.append(this.makeCount(sqlTemp))
+        }
+    }
 
     fun makeOrderSql(sql: String, sorts: Set<Triple<String?, String, Direction?>>): String {
 
@@ -112,10 +124,8 @@ object MakeUtil {
     }
 
 
-
-
-    fun makePagedSql(pagedSql: String?, sqlTemp: LinkedList<SQLTEMP>, indexUk: String?, indexKey: String?, select: List<Condition>): String {
-       return if (!pagedSql.isNullOrEmpty()) {
+    fun makePagedSql(pagedSql: String?, sqlTemp: LinkedHashSet<SQLTEMP>, indexUk: String?, indexKey: String?, select: Set<Condition>): String {
+        return if (!pagedSql.isNullOrEmpty()) {
             requireNotNull(indexUk) { "indexUk is null but it is needed" }
             requireNotNull(indexKey) { "indexKey is null but it is needed" }
             //创造关键uk
@@ -125,42 +135,34 @@ object MakeUtil {
             //创造分页语句
             val temp = LinkedHashSet<SQLTEMP>()
             //先把主句柄加进来
-            val mainSql = requireNotNull(sqlTemp.find { it.isSuper} ){"the finalWhere sql must contains FIELDS_CHARACTER_IN_SQL"}
+            val mainSql = requireNotNull(sqlTemp.find { it.isSuper }) { "the finalWhere sql must contains FIELDS_CHARACTER_IN_SQL" }
             temp.add(mainSql)
             //迭代添加包含关键uk的句柄
             filterSql(temp, sqlTemp, includeKeys)
-
-
-
-           val newSqlTemp = LinkedHashSet<SQLTEMP>()
-           newSqlTemp.addAll(sqlTemp)
-
-           val interator=newSqlTemp.iterator()
-
-           while (interator.hasNext()){
-               val next=interator.next()
-
-               if(!temp.contains(next)){
-                   interator.remove()
-               }
-           }
-
-
+            val newSqlTemp = LinkedHashSet<SQLTEMP>()
+            newSqlTemp.addAll(sqlTemp)
+            val interator = newSqlTemp.iterator()
+            while (interator.hasNext()) {
+                val next = interator.next()
+                if (!temp.contains(next)) {
+                    interator.remove()
+                }
+            }
             val newPagedTemp = StringBuffer()
             val pagedSqlParts = pagedSql.split(PAGED_REPLACE_CHARACTER_IN_SQL)
             pagedSqlParts.forEachIndexed { index, s ->
                 newPagedTemp.append(s)
                 if (index != pagedSqlParts.size - 1) {
                     newSqlTemp.forEach {
-                        val sql=it.sql
-                        if(sql.params==FIELDS_CHARACTER_IN_SQL){
-                            sql.params=" $indexUk.$indexKey"
+                        val sql = it.sql
+                        if (sql.params == FIELDS_CHARACTER_IN_SQL) {
+                            sql.params = " $indexUk.$indexKey"
                         }
 
-                       if(sql.uk== UK_CHARACTER_IN_SQL){
-                           sql.uk=it.uk
-                       }
-                       newPagedTemp.append(sql.make())
+                        if (sql.uk == UK_CHARACTER_IN_SQL) {
+                            sql.uk = it.uk
+                        }
+                        newPagedTemp.append(sql.make())
 
                     }
 
@@ -173,8 +175,7 @@ object MakeUtil {
     }
 
 
-
-    private fun filterSql(temp: LinkedHashSet<SQLTEMP>, sqlTemp: LinkedList<SQLTEMP>, includeKeys: MutableSet<String>) {
+    private fun filterSql(temp: LinkedHashSet<SQLTEMP>, sqlTemp: LinkedHashSet<SQLTEMP>, includeKeys: MutableSet<String>) {
 
         var needLoop = false
         sqlTemp.forEach { sqlPair ->
@@ -198,6 +199,44 @@ object MakeUtil {
             filterSql(temp, sqlTemp, includeKeys)
     }
 
+
+    fun getTotalCountSql(sqlTemp: LinkedHashSet<SQLTEMP>, whereSql: String?, select: Set<Condition>): String {
+        //创造关键uk
+        val includeKeys = mutableSetOf<String>()
+        includeKeys.addAll(select.mapNotNull { it.sourceUk })
+        //创造分页语句
+        val temp = LinkedHashSet<SQLTEMP>()
+        //先把主句柄加进来
+        val mainSql = requireNotNull(sqlTemp.find { it.isSuper }) { "the finalWhere sql must contains FIELDS_CHARACTER_IN_SQL" }
+        temp.add(mainSql)
+        //迭代添加包含关键uk的句柄
+        filterSql(temp, sqlTemp, includeKeys)
+        val newSqlTemp = LinkedHashSet<SQLTEMP>()
+        newSqlTemp.addAll(sqlTemp)
+        val iterator=newSqlTemp.iterator()
+        while (iterator.hasNext()){
+            val next=iterator.next()
+            if(!temp.contains(next)){
+                iterator.remove()
+            }
+        }
+        val newSql = StringBuffer()
+        newSqlTemp.forEach {
+            val sql = it.sql
+            if (sql.params == FIELDS_CHARACTER_IN_SQL) {
+                sql.params = " count(*) "
+            }
+
+            if (sql.uk == UK_CHARACTER_IN_SQL) {
+                sql.uk = it.uk
+            }
+
+            newSql.append(sql.make())
+        }
+
+        whereSql?.apply { newSql.append(this) }
+        return newSql.toString()
+    }
 
 }
 

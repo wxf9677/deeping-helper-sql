@@ -186,7 +186,6 @@ object SqlSplitUtils {
         val sql = StringBuffer()
         newSqlTemp.forEach { sql.append(it.sql.replace(UK_CHARACTER_IN_SQL, it.uk)) }
         return sql.toString()
-
     }
 
 
