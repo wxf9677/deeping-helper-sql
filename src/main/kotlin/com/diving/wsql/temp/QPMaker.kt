@@ -1,5 +1,6 @@
 package com.diving.wsql.temp
 
+import com.diving.wsql.AnnotationUtils
 import com.diving.wsql.GsonUtil
 import com.diving.wsql.Utils
 import com.diving.wsql.builder.FIELDS_CHARACTER_IN_SQL
@@ -12,7 +13,6 @@ import com.diving.wsql.en.Join
 import com.diving.wsql.en.Operate
 import com.diving.wsql.temp.annotations.*
 import com.diving.wsql.temp.en.*
-import org.springframework.core.annotation.AnnotationUtils
 import java.lang.reflect.Field
 import java.util.*
 import kotlin.collections.ArrayList
@@ -73,11 +73,6 @@ class QPMaker {
 
         }
     }
-
-
-
-
-
 
     constructor(clazz: Class<*>) {
         val csn = AnnotationUtils.findAnnotation(clazz, SqlQuery::class.java)
@@ -310,7 +305,6 @@ class QPMaker {
         val countSql=SQL(joinString,Operate.SELECT,"","count(*) $customCountFieldName",tableName,UK_CHARACTER_IN_SQL,null,"", listOf())
         appendSql(uk, countSql, null,false)
         callback.invoke(uk,  customCountFieldName)
-
     }
 
 }
