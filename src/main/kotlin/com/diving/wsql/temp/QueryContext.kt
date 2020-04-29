@@ -1,7 +1,6 @@
 package com.diving.wsql.temp
 
 import com.diving.wsql.GsonUtil
-import com.diving.wsql.SqlSplitUtils
 import com.diving.wsql.Utils
 import com.diving.wsql.Utils.checkValueFix
 import com.diving.wsql.core.checkException
@@ -13,7 +12,7 @@ import java.math.BigInteger
 import javax.persistence.EntityManager
 
 
-class QueryContext {
+class QueryContext<T> {
     //临时存储每条数据库数据装好的类，用完清空
     private val readTempList = LinkedHashMap<String, Any>()
     //存储结果集中的子对象
@@ -21,10 +20,10 @@ class QueryContext {
     //存储结果集
     private val objectList = LinkedHashMap<String, Any>()
     //qp装载器
-    private lateinit var options: OPTIONS
+    private lateinit var options: OPTIONS<T>
 
-    fun <T>query(o: OPTIONS, entityManager: EntityManager): List<T> {
-        options = o
+    fun query(options: OPTIONS<T>, entityManager: EntityManager): List<T> {
+        this.options = options
         val query = entityManager.createNativeQuery(options.sql)
         query.resultList.forEachIndexed { index, any -> classFilling(options.superQp, any) }
         return objectList.map { it.value as T}

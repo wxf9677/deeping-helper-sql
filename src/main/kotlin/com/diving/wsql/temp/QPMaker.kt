@@ -20,7 +20,7 @@ import kotlin.collections.ArrayList
 import kotlin.collections.LinkedHashSet
 
 
-class QPMaker {
+class QPMaker<T> {
     private val selectFields = StringBuffer()
     private val sql = StringBuffer()
     private val superQp: QP
@@ -51,7 +51,7 @@ class QPMaker {
     }
 
 
-    fun make(): OPTIONS {
+    fun make(): OPTIONS<T> {
         reMakeSqlTemp()
         MakeUtil.makeSqlSelectionFields(selectFields, query)
         MakeUtil.makeUrl(sql, selectFields, sqlTemp)
@@ -59,14 +59,14 @@ class QPMaker {
     }
 
 
-    fun setFinalWhereBuilder(builder: Where): QPMaker {
+    fun setFinalWhereBuilder(builder: Where): QPMaker<T> {
         val target = sqlTemp.find { it.isSuper }
         target?.where = builder
         return this
 
     }
 
-    fun setWhereBuilder(uk: String, builder: Where): QPMaker {
+    fun setWhereBuilder(uk: String, builder: Where): QPMaker<T> {
         whereBuilders[uk] = builder
         return this
 
@@ -80,7 +80,7 @@ class QPMaker {
         }
     }
 
-    constructor(clazz: Class<*>) {
+    constructor(clazz: Class<T>) {
         val csn = AnnotationUtils.findAnnotation(clazz, SqlQuery::class.java)
         requireNotNull(csn) { "the class:${clazz.simpleName} must DI with Query" }
         requireNotNull(csn.uk) { "the class:${clazz.simpleName} lost uk in Query" }
