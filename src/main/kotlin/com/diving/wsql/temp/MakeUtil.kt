@@ -79,6 +79,7 @@ object MakeUtil {
                 finalWhere = it.where
                 sql.append(it.sql.make().replace(FIELDS_CHARACTER_IN_SQL, selectFields.toString()).replace(UK_CHARACTER_IN_SQL, it.uk))
             } else {
+                it.sql.where=it.where?.let{ it.make(sqlTemp)}
                 sql.append(it.sql.make().replace(UK_CHARACTER_IN_SQL, it.uk))
             }
         }
@@ -154,6 +155,7 @@ object MakeUtil {
                 newPagedTemp.append(s)
                 if (index != pagedSqlParts.size - 1) {
                     newSqlTemp.forEach {
+
                         val sql = it.sql
                         if (sql.params == FIELDS_CHARACTER_IN_SQL) {
                             sql.params = " $indexUk.$indexKey"
@@ -236,6 +238,47 @@ object MakeUtil {
 
         whereSql?.apply { newSql.append(this) }
         return newSql.toString()
+    }
+
+
+    //indexMax 默认是按照时间来的，需要其他的比较对象，需要重新设置
+    fun makePageWithIndex(where: String,indexKey: String, linkUk: String, indexKeyDirection: Direction?, offset: Int, size: Int): String {
+
+        //这里是否需要将所有排序加进来需要优化
+        var startOffSet: Int
+        var endOffSet: Int
+        var direct: String
+        val start: String
+        val end: String
+        when (indexKeyDirection) {
+            Direction.ASC -> {
+                startOffSet = offset
+                endOffSet = offset + size - 1
+                direct = "order by $linkUk.$indexKey ASC"
+                start = "( $PAGED_REPLACE_CHARACTER_IN_SQL $where $direct limit $startOffSet , 1)"
+                end = "(select ifnull(($PAGED_REPLACE_CHARACTER_IN_SQL $where $direct limit $endOffSet , 1),(select MAX($indexKey) from ($PAGED_REPLACE_CHARACTER_IN_SQL) a )))"
+            }
+            Direction.DESC -> {
+                startOffSet = offset + size - 1
+                endOffSet = offset
+                direct = "order by $linkUk.$indexKey DESC"
+                start = "(select ifnull(($PAGED_REPLACE_CHARACTER_IN_SQL $where $direct limit $startOffSet , 1),(select MIN($indexKey) from ($PAGED_REPLACE_CHARACTER_IN_SQL) a )))"
+                end = "($PAGED_REPLACE_CHARACTER_IN_SQL $where $direct limit $endOffSet , 1)"
+            }
+            else -> {
+                startOffSet = offset + size - 1
+                endOffSet = offset
+                direct = "order by $linkUk.$indexKey DESC"
+                start = "(select ifnull(($PAGED_REPLACE_CHARACTER_IN_SQL $where $direct limit $startOffSet , 1),(select MIN($indexKey) from ($PAGED_REPLACE_CHARACTER_IN_SQL) a)))"
+                end = "($PAGED_REPLACE_CHARACTER_IN_SQL $where $direct limit $endOffSet , 1)"
+            }
+        }
+
+        return if (linkUk == null)
+            " $indexKey between $start and $end"
+        else
+            " $linkUk.$indexKey between $start and $end"
+
     }
 
 }

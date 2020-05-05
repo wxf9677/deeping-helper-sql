@@ -31,10 +31,10 @@ class SQL(
 
 
     fun make(): String {
-       return if (join .isNotEmpty()) {
-           "$join (${select.string} $distinct $params  ${getTName()} ${where?:""}) $uk $term ${terms.map { it.make() }.stuffToString(" and ")}"
+       return if (join.isNotEmpty()) {
+           "$join (${select.string} $distinct $params  ${getTName()} $uk ${where?:""}) $uk $term ${terms.map { it.make() }.stuffToString(" and ")}"
        }else {
-           "${select.string} $distinct $params  ${getTName()} $uk ${where?:""} "
+           "${select.string} $distinct $params ${getTName()} $uk ${where?:""} "
        }
 
     }

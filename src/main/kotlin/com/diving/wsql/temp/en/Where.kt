@@ -90,7 +90,7 @@ class Where {
         val paged= if (customPaged) {
             indexKey = Utils.formatSqlField(indexKey!!)
             val offset = page!! * size!!
-            val pagedSql = "${SqlSplitUtils.makePageWithIndex(indexKey!!, indexUk!!, indexSort, offset, size!!)}"
+            val pagedSql = "${MakeUtil.makePageWithIndex(where,indexKey!!, indexUk!!, indexSort, offset, size!!)}"
             MakeUtil.makePagedSql( MakeUtil.makeOrderSql(pagedSql, sorts), sqlTemp, indexUk, indexKey, conditionTerms)
 
         } else {

@@ -2,6 +2,8 @@ package com.diving.wsql
 
 import com.diving.wsql.core.stuffToString
 import com.diving.wsql.Utils.formatSqlField
+import com.diving.wsql.bean.ConditionTerm
+import com.diving.wsql.bean.SqlTemp
 import com.diving.wsql.builder.FIELDS_CHARACTER_IN_SQL
 import com.diving.wsql.builder.PAGED_REPLACE_CHARACTER_IN_SQL
 import com.diving.wsql.builder.UK_CHARACTER_IN_SQL
@@ -81,7 +83,7 @@ object SqlSplitUtils {
     }
 
 
-    private fun filterSql(temp: LinkedHashSet<com.diving.wsql.bean.SqlTemp>, sqlTemp: LinkedList<com.diving.wsql.bean.SqlTemp>, includeKeys: MutableSet<String>) {
+    private fun filterSql(temp: LinkedHashSet<SqlTemp>, sqlTemp: LinkedList<SqlTemp>, includeKeys: MutableSet<String>) {
 
         var needLoop=false
         sqlTemp.forEach { sqlPair ->
@@ -110,7 +112,7 @@ object SqlSplitUtils {
 
 
 
-    fun makePagedSql(pagedSql: String?, sqlTemp: LinkedList<com.diving.wsql.bean.SqlTemp>, indexUk: String?, indexKey: String?, whereSql: String, select: Set<com.diving.wsql.bean.ConditionTerm>) {
+    fun makePagedSql(pagedSql: String?, sqlTemp: LinkedList<SqlTemp>, indexUk: String?, indexKey: String?, whereSql: String, select: Set<ConditionTerm>) {
         if (!pagedSql.isNullOrEmpty()) {
             requireNotNull(indexUk) { "indexUk is null but it is needed" }
             requireNotNull(indexKey) { "indexKey is null but it is needed" }
@@ -119,14 +121,14 @@ object SqlSplitUtils {
             includeKeys.add(indexUk)
             includeKeys.addAll(select.mapNotNull { it.sUk })
             //创造分页语句
-            val temp = LinkedHashSet<com.diving.wsql.bean.SqlTemp>()
+            val temp = LinkedHashSet<SqlTemp>()
             //先把主句柄加进来
             val mainSql = requireNotNull(sqlTemp.find { it.sql.contains(FIELDS_CHARACTER_IN_SQL)} ){"the finalWhere sql must contains FIELDS_CHARACTER_IN_SQL"}
             temp.add(mainSql)
             //迭代添加包含关键uk的句柄
             filterSql(temp, sqlTemp, includeKeys)
 
-            val newSqlTemp = LinkedHashSet<com.diving.wsql.bean.SqlTemp>()
+            val newSqlTemp = LinkedHashSet<SqlTemp>()
             newSqlTemp.addAll(sqlTemp)
 
             val interator=newSqlTemp.iterator()
@@ -139,41 +141,41 @@ object SqlSplitUtils {
                 }
             }
 
-            newSqlTemp.add(com.diving.wsql.bean.SqlTemp("", whereSql, "", false))
+            newSqlTemp.add(SqlTemp("", whereSql, "", false))
 
-            val newPagedTemp = LinkedList<com.diving.wsql.bean.SqlTemp>()
+            val newPagedTemp = LinkedList<SqlTemp>()
             val pagedSqlParts = pagedSql.split(PAGED_REPLACE_CHARACTER_IN_SQL)
             pagedSqlParts.forEachIndexed { index, s ->
-                newPagedTemp.add(com.diving.wsql.bean.SqlTemp("", s, "", false))
+                newPagedTemp.add(SqlTemp("", s, "", false))
                 if (index != pagedSqlParts.size - 1) {
                     val s = newSqlTemp.map {
-                        com.diving.wsql.bean.SqlTemp("", it.sql.replace(UK_CHARACTER_IN_SQL, it.uk).replace(FIELDS_CHARACTER_IN_SQL, " $indexUk.$indexKey"), "", false)
+                        SqlTemp("", it.sql.replace(UK_CHARACTER_IN_SQL, it.uk).replace(FIELDS_CHARACTER_IN_SQL, " $indexUk.$indexKey"), "", false)
                     }
                     newPagedTemp.addAll(s)
                 }
             }
-            sqlTemp.add(com.diving.wsql.bean.SqlTemp("", whereSql, "", false))
+            sqlTemp.add(SqlTemp("", whereSql, "", false))
             sqlTemp.addAll(newPagedTemp)
         } else {
-            sqlTemp.add(com.diving.wsql.bean.SqlTemp("", whereSql, "", false))
+            sqlTemp.add(SqlTemp("", whereSql, "", false))
         }
     }
 
 
 
-    fun getTotalCountSql(sqlTemp: LinkedList<com.diving.wsql.bean.SqlTemp>, whereSql: String?, select: Set<com.diving.wsql.bean.ConditionTerm>?): String {
+    fun getTotalCountSql(sqlTemp: LinkedList<SqlTemp>, whereSql: String?, select: Set<ConditionTerm>?): String {
         //创造关键uk
         val includeKeys = mutableSetOf<String>()
 
         select?.mapNotNull { it.sUk }?.apply {includeKeys.addAll(this) }
         //创造分页语句
-        val temp = LinkedHashSet<com.diving.wsql.bean.SqlTemp>()
+        val temp = LinkedHashSet<SqlTemp>()
         //先把主句柄加进来
         val mainSql = requireNotNull( sqlTemp.find { it.sql.contains(FIELDS_CHARACTER_IN_SQL) } ){"the sql select count lost finalWhere word"}
         temp.add(mainSql)
         //迭代添加包含关键uk的句柄
         filterSql(temp, sqlTemp, includeKeys)
-        val newSqlTemp = LinkedHashSet<com.diving.wsql.bean.SqlTemp>()
+        val newSqlTemp = LinkedHashSet<SqlTemp>()
         newSqlTemp.addAll(sqlTemp)
         val iterator=newSqlTemp.iterator()
         while (iterator.hasNext()){
@@ -182,7 +184,7 @@ object SqlSplitUtils {
                 iterator.remove()
             }
         }
-        whereSql?.apply {  newSqlTemp.add(com.diving.wsql.bean.SqlTemp("", this, "", false))}
+        whereSql?.apply {  newSqlTemp.add(SqlTemp("", this, "", false))}
         val sql = StringBuffer()
         newSqlTemp.forEach { sql.append(it.sql.replace(UK_CHARACTER_IN_SQL, it.uk)) }
         return sql.toString()
