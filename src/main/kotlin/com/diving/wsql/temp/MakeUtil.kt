@@ -8,6 +8,7 @@ import com.diving.wsql.builder.PAGED_REPLACE_CHARACTER_IN_SQL
 import com.diving.wsql.builder.UK_CHARACTER_IN_SQL
 import com.diving.wsql.core.uniKey
 import com.diving.wsql.en.Direction
+import com.diving.wsql.en.Link
 import com.diving.wsql.temp.en.Condition
 import com.diving.wsql.temp.en.QP
 import com.diving.wsql.temp.en.SQLTEMP
@@ -79,11 +80,11 @@ object MakeUtil {
                 finalWhere = it.where
                 sql.append(it.sql.make().replace(FIELDS_CHARACTER_IN_SQL, selectFields.toString()).replace(UK_CHARACTER_IN_SQL, it.uk))
             } else {
-                it.sql.where=it.where?.let{ it.make(sqlTemp)}
+                it.sql.where = it.where?.let { it.make(sqlTemp) }
                 sql.append(it.sql.make().replace(UK_CHARACTER_IN_SQL, it.uk))
             }
         }
-        finalWhere?.apply {sql.append(this.make(sqlTemp)) }
+        finalWhere?.apply { sql.append(this.make(sqlTemp)) }
     }
 
 
@@ -202,10 +203,24 @@ object MakeUtil {
     }
 
 
-    fun getTotalCountSql(sqlTemp: LinkedHashSet<SQLTEMP>, whereSql: String?, select: Set<Condition>): String {
+    fun makeWhereString(conditionTerms: Set<Pair<Condition, Link>>): String {
+        val str =
+                if (conditionTerms.isEmpty()) {
+                    StringBuffer("")
+                } else {
+                    StringBuffer(" where ")
+                }
+        conditionTerms.forEach {
+            str.append(" ${it.first.make()} ${it.second.string}")
+        }
+        return str.toString()
+    }
+
+    fun getTotalCountSql(sqlTemp: LinkedHashSet<SQLTEMP>, select: Set<Pair<Condition, Link>>): String {
+        val whereSql = makeWhereString(select)
         //创造关键uk
         val includeKeys = mutableSetOf<String>()
-        includeKeys.addAll(select.mapNotNull { it.sourceUk })
+        includeKeys.addAll(select.mapNotNull { it.first.sourceUk })
         //创造分页语句
         val temp = LinkedHashSet<SQLTEMP>()
         //先把主句柄加进来
@@ -215,10 +230,10 @@ object MakeUtil {
         filterSql(temp, sqlTemp, includeKeys)
         val newSqlTemp = LinkedHashSet<SQLTEMP>()
         newSqlTemp.addAll(sqlTemp)
-        val iterator=newSqlTemp.iterator()
-        while (iterator.hasNext()){
-            val next=iterator.next()
-            if(!temp.contains(next)){
+        val iterator = newSqlTemp.iterator()
+        while (iterator.hasNext()) {
+            val next = iterator.next()
+            if (!temp.contains(next)) {
                 iterator.remove()
             }
         }
@@ -242,7 +257,7 @@ object MakeUtil {
 
 
     //indexMax 默认是按照时间来的，需要其他的比较对象，需要重新设置
-    fun makePageWithIndex(where: String,indexKey: String, linkUk: String, indexKeyDirection: Direction?, offset: Int, size: Int): String {
+    fun makePageWithIndex(where: String, indexKey: String, linkUk: String, indexKeyDirection: Direction?, offset: Int, size: Int): String {
 
         //这里是否需要将所有排序加进来需要优化
         var startOffSet: Int

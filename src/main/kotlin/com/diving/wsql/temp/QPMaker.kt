@@ -2,7 +2,6 @@ package com.diving.wsql.temp
 
 import com.diving.wsql.AnnotationUtils
 import com.diving.wsql.GsonUtil
-import com.diving.wsql.SqlSplitUtils
 import com.diving.wsql.Utils
 import com.diving.wsql.builder.FIELDS_CHARACTER_IN_SQL
 import com.diving.wsql.builder.MOUNTKEY_SPLIT
@@ -11,11 +10,11 @@ import com.diving.wsql.core.getFieldsRecursive
 import com.diving.wsql.core.stuffToString
 import com.diving.wsql.en.Arithmetic
 import com.diving.wsql.en.Join
+import com.diving.wsql.en.Link
 import com.diving.wsql.en.Operate
 import com.diving.wsql.temp.annotations.*
 import com.diving.wsql.temp.en.*
 import java.lang.reflect.Field
-import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.LinkedHashSet
 
@@ -30,7 +29,7 @@ class QPMaker<T> {
     private val ukPool = ArrayList<String>()
 
 
-    private fun appendSql(uk: String, sql: SQL, where: Where?, isSuper: Boolean) {
+    private fun appendJoin(uk: String, sql: SQL, where: Where?, isSuper: Boolean) {
         require(!uk.contains(MOUNTKEY_SPLIT)) { "the uk or fieldName can not contains a char with $MOUNTKEY_SPLIT" }
         fitUk(uk)
         sqlTemp.add(SQLTEMP(uk, sql, where, isSuper))
@@ -72,6 +71,15 @@ class QPMaker<T> {
 
     }
 
+
+    fun appendJoin(uk: String, join: Join, tableName:String, where: Where?, condition: Condition): QPMaker<T> {
+        val innersqlBuilder = SQL(join.s, Operate.SELECT, "", "*", tableName, UK_CHARACTER_IN_SQL, null, "on", listOf(condition))
+        appendJoin(uk, innersqlBuilder, where, false)
+        return this
+
+    }
+
+
     private fun reMakeSqlTemp() {
         whereBuilders.forEach { builder ->
             val target = sqlTemp.find { it.uk == builder.key }
@@ -88,7 +96,7 @@ class QPMaker<T> {
         val uk = csn.uk
         val distinct = if (csn.distinct) "distinct" else ""
         val sqlBuilder = SQL("", Operate.SELECT, distinct, FIELDS_CHARACTER_IN_SQL, tableName, UK_CHARACTER_IN_SQL, null, "", listOf())
-        appendSql(uk, sqlBuilder, null, true)
+        appendJoin(uk, sqlBuilder, null, true)
         //主要qp
         superQp = QP(uk, uk, uk, "", null, null, false, false, clazz)
         makeQuery(superQp)
@@ -201,7 +209,7 @@ class QPMaker<T> {
         val targetFieldName: String = join.targetFieldName
         val joinString: String = join.join.s
         val sqlBuilder = SQL(joinString, Operate.SELECT, "", "*", tableName, UK_CHARACTER_IN_SQL, null, "on", listOf(Condition(uk, fieldName, arithmetic, targetUk, targetFieldName)))
-        appendSql(uk, sqlBuilder, null, false)
+        appendJoin(uk, sqlBuilder, null, false)
         return uk
     }
 
@@ -216,7 +224,7 @@ class QPMaker<T> {
         val innerTargetUk = innerJoin.targetUk
         val innerTargetFieldName = innerJoin.targetFieldName
         val innersqlBuilder = SQL(innerJ, Operate.SELECT, "", "*", innerTableName, UK_CHARACTER_IN_SQL, null, "on", listOf(Condition(innerUk, innerFieldName, innerArithmetic, innerTargetUk, innerTargetFieldName)))
-        appendSql(innerUk, innersqlBuilder, null, false)
+        appendJoin(innerUk, innersqlBuilder, null, false)
         val tableName: String = join.tableName
         val uk: String = join.uk
         val fieldName: String = join.fieldName
@@ -225,7 +233,7 @@ class QPMaker<T> {
         val targetFieldName: String = join.targetFieldName
         val joinString: String = join.join.s
         val sqlBuilder = SQL(joinString, Operate.SELECT, "", "*", tableName, UK_CHARACTER_IN_SQL, null, "on", listOf(Condition(uk, fieldName, arithmetic, targetUk, targetFieldName)))
-        appendSql(uk, sqlBuilder, null, false)
+        appendJoin(uk, sqlBuilder, null, false)
         return uk
     }
 
@@ -249,7 +257,7 @@ class QPMaker<T> {
         val sqlBuilder = SQL(joinString, Operate.SELECT, "", "*", tableName, UK_CHARACTER_IN_SQL, null, "on", listOf(Condition(uk, fieldName, arithmetic, targetUk, targetFieldName)))
         val same = sqlTemp.find { it.uk == uk && GsonUtil.toJson(it.sql) == GsonUtil.toJson(sqlBuilder) }
         if (same == null) {
-            appendSql(uk, sqlBuilder, null, false)
+            appendJoin(uk, sqlBuilder, null, false)
         }
 
         callback.invoke(uk, newInvalidFieldName, isInResult)
@@ -271,8 +279,8 @@ class QPMaker<T> {
         val customCountFieldName = Utils.formatSqlField(field.name)
         val countUk = "countUk"
         //select distinct (select count(*) from taaaa  where user_id = countUk.user_id) count, user_id from taaaa countUk) roleqww on roleqww.user_id = user.user_id
-        val w = Where().setConditionTerm(Condition(uk, fieldName, arithmetic, targetUk, targetFieldName))
-        val conditionsFields = w.conditionTerms.map { Utils.formatSqlField(it.sourceFieldName) }
+        val w = Where().setConditionTerm(Condition(uk, fieldName, arithmetic, targetUk, targetFieldName),Link.None)
+        val conditionsFields = w.conditionTerms.map { Utils.formatSqlField(it.first.sourceFieldName) }
         //select count(*) from taaaa  where user_id = countUk.user_id
         val countSql = SQL("", Operate.SELECT, "", "count(*)", tableName, "", w.make(sqlTemp), "", listOf())
         val selectParams = mutableListOf<String>()
@@ -281,7 +289,7 @@ class QPMaker<T> {
         //select distinct (select count(*) from taaaa  where user_id = countUk.user_id) count, user_id from taaaa countUk)
         val countSql2 = SQL("", Operate.SELECT, "distinct", "${selectParams.stuffToString()}", tableName, countUk, null, "", listOf())
         val countSql3 = SQL(joinString, Operate.NONE, "", countSql2.make(), "", uk, null, "on", listOf(Condition(uk, fieldName, arithmetic, targetUk, targetFieldName)))
-        appendSql(uk, countSql3, null, false)
+        appendJoin(uk, countSql3, null, false)
         callback.invoke(uk, customCountFieldName)
 
     }
@@ -293,7 +301,7 @@ class QPMaker<T> {
         val joinString: String = Join.INNER.s
         val customCountFieldName = Utils.formatSqlField(field.name)
         val countSql = SQL(joinString, Operate.SELECT, "", "count(*) $customCountFieldName", tableName, UK_CHARACTER_IN_SQL, null, "", listOf())
-        appendSql(uk, countSql, null, false)
+        appendJoin(uk, countSql, null, false)
         callback.invoke(uk, customCountFieldName)
     }
 

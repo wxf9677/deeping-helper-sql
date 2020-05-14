@@ -1,12 +1,9 @@
 package com.diving.wsql.temp.en
 
-import com.diving.wsql.SqlSplitUtils
 import com.diving.wsql.Utils
-import com.diving.wsql.core.stuffToString
 import com.diving.wsql.en.Direction
+import com.diving.wsql.en.Link
 import com.diving.wsql.temp.MakeUtil
-import java.util.*
-import kotlin.collections.LinkedHashSet
 
 /**
  * @package: com.diving.wsql.builder
@@ -17,7 +14,7 @@ import kotlin.collections.LinkedHashSet
  * @version:
  **/
 class Where {
-   internal val conditionTerms = mutableSetOf<Condition>()
+   internal val conditionTerms = mutableSetOf<Pair<Condition,Link>>()
     internal val sorts = mutableSetOf<Triple<String?, String, Direction?>>()
     internal var page: Int = 0
     internal var size: Int = 0
@@ -29,8 +26,8 @@ class Where {
     private var indexKey: String? = ""
     private var indexSort: Direction = Direction.DESC
 
-    fun setConditionTerm(condition: Condition): Where {
-        conditionTerms.add(condition)
+    fun setConditionTerm(condition: Condition,link: Link): Where {
+        conditionTerms.add(condition to link)
         return this
     }
 
@@ -58,11 +55,7 @@ class Where {
 
 
     fun make(sqlTemp: LinkedHashSet<SQLTEMP>): String {
-        val where = if (conditionTerms.isNotEmpty()) {
-            " where ${conditionTerms.map { it.make() }.stuffToString("and")}"
-        } else {
-            ""
-        }
+        val where=MakeUtil.makeWhereString(conditionTerms)
         return if (paged && sorted) {
             makePagedSql(where,sqlTemp)
         } else if (paged && !sorted) {
@@ -74,13 +67,11 @@ class Where {
         }
     }
 
+
+
+
     fun makeCount(sqlTemp: LinkedHashSet<SQLTEMP>): String {
-        val where = if (conditionTerms.isNotEmpty()) {
-            " where ${conditionTerms.map { it.make() }.stuffToString("and")}"
-        } else {
-            ""
-        }
-       return MakeUtil.getTotalCountSql(sqlTemp,where,conditionTerms)
+        return MakeUtil.getTotalCountSql(sqlTemp,conditionTerms)
     }
 
 
@@ -91,7 +82,7 @@ class Where {
             indexKey = Utils.formatSqlField(indexKey!!)
             val offset = page!! * size!!
             val pagedSql = "${MakeUtil.makePageWithIndex(where,indexKey!!, indexUk!!, indexSort, offset, size!!)}"
-            MakeUtil.makePagedSql( MakeUtil.makeOrderSql(pagedSql, sorts), sqlTemp, indexUk, indexKey, conditionTerms)
+            MakeUtil.makePagedSql( MakeUtil.makeOrderSql(pagedSql, sorts), sqlTemp, indexUk, indexKey, conditionTerms.map { it.first }.toSet())
 
         } else {
             val pagedSql = StringBuffer(MakeUtil.makeOrderSql("", sorts))
