@@ -9,6 +9,7 @@ import com.diving.wsql.builder.PAGED_REPLACE_CHARACTER_IN_SQL
 import com.diving.wsql.builder.UK_CHARACTER_IN_SQL
 import com.diving.wsql.en.Arithmetic
 import com.diving.wsql.en.Direction
+import com.diving.wsql.en.Link
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.collections.LinkedHashSet
@@ -210,7 +211,7 @@ object SqlSplitUtils {
 
     private fun make(arithmetic: Arithmetic, v: List<String>): String {
         return when (arithmetic) {
-            Arithmetic.EQUAL, Arithmetic.LIKE -> {
+            Arithmetic.LESS , Arithmetic.EQUAL, Arithmetic.LIKE -> {
                 if (v.size > 1 || v.isEmpty())
                     throw IllegalArgumentException("Arithmetic.EQUAL must compare with just one value")
                 "  ${arithmetic.string} ${v[0]} "
@@ -218,6 +219,13 @@ object SqlSplitUtils {
             Arithmetic.IN -> {
                 "  ${arithmetic.string} (${v.stuffToString()}) "
             }
+            Arithmetic.BETWEEN -> {
+                if (v.size !=2)
+                    throw IllegalArgumentException("Arithmetic.BETWEEN must compare with just two value")
+                "  ${arithmetic.string} ${v[0]} ${Link.AND} ${v[1]} "
+            }
+
+
             else -> throw IllegalArgumentException("暂不支持")
         }
     }
