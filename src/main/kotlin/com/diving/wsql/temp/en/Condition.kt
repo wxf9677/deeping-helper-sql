@@ -95,7 +95,6 @@ class Condition {
                 " ${values[0]} "
             }
             Arithmetic.IN ->  "(${values.stuffToString()}) "
-
             Arithmetic.BETWEEN -> {
                 if (values.size !=2)
                     throw IllegalArgumentException("Arithmetic.BETWEEN must compare with just two value")
